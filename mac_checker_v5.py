@@ -17,7 +17,7 @@ To get access:
 1. Contact @soulking4045 on Telegram
 2. Request a license key
 3. Admin will grant you permission
-4. Enter your key + Telegram ID when prompted
+4. Enter your Device Key when prompted
 """
 
 import asyncio
@@ -82,27 +82,22 @@ def get_device_id():
         with open(DEVICE_ID_FILE) as f:
             return f.read().strip()
     
-    # Generate based on hardware + random
     hw_info = ""
     try:
         result = subprocess.run(["uname", "-a"], capture_output=True, text=True)
         hw_info += result.stdout.strip()
     except:
         pass
-    
     try:
         import socket
         hw_info += socket.gethostname()
     except:
         pass
-    
     hw_info += secrets.token_hex(8)
     device_id = "MC5-" + hashlib.sha256(hw_info.encode()).hexdigest()[:12].upper()
-    
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(DEVICE_ID_FILE, 'w') as f:
         f.write(device_id)
-    
     return device_id
 
 
@@ -123,24 +118,24 @@ class LicenseManager:
         self._load_saved()
     
     def _load_saved(self):
-        """Load saved license info"""
+        """Load saved license info — device_id is the identifier"""
         if os.path.exists(LICENSE_FILE):
             try:
                 with open(LICENSE_FILE) as f:
                     self.license_data = json.load(f)
-                    self.user_id = self.license_data.get("user_id")
                     self.license_key = self.license_data.get("key")
                     self.is_licensed = self.license_data.get("validated", False)
                     self.server_url = self.license_data.get("server_url")
+                    self.device_id = self.license_data.get("device_id", get_device_id())
+                    self.user_id = self.device_id
             except:
                 pass
     
     def _save_license(self):
-        """Save license info to disk"""
+        """Save license info to disk — device_id is the identifier"""
         os.makedirs(CONFIG_DIR, exist_ok=True)
         with open(LICENSE_FILE, 'w') as f:
             json.dump({
-                "user_id": self.user_id,
                 "key": self.license_key,
                 "validated": self.is_licensed,
                 "server_url": self.server_url,
@@ -187,10 +182,10 @@ class LicenseManager:
         except:
             return False
     
-    async def validate_key(self, key, user_id):
-        """Validate license key and check permissions"""
+    async def validate_key(self, key):
+        """Validate license key using device_id as identifier"""
         self.license_key = key.strip().upper()
-        self.user_id = user_id.strip()
+        self.user_id = self.device_id
         
         servers_to_try = [KEY_SERVER_URL] + KEY_SERVER_FALLBACKS
         if self.server_url and self.server_url not in servers_to_try:
@@ -198,14 +193,14 @@ class LicenseManager:
         
         for server_url in servers_to_try:
             print(f"{C}[*] Connecting to key server: {server_url}{N}")
-            result = await self._try_validate(server_url, self.license_key, self.user_id)
+            result = await self._try_validate(server_url, self.license_key, self.device_id)
             
             if result:
                 self.server_url = server_url
                 if result.get("valid"):
                     self.is_licensed = True
                     self._save_license()
-                    await self._try_activate(server_url, self.license_key, self.user_id)
+                    await self._try_activate(server_url, self.license_key, self.device_id)
                     return True, result.get("message", "Access granted"), result
                 else:
                     return False, result.get("message", "Access denied"), result
@@ -216,7 +211,6 @@ class LicenseManager:
         """Quick local check without server"""
         if self.is_licensed and self.license_data:
             validated_at = self.license_data.get("validated_at", 0)
-            # Local validation expires after 7 days — must re-validate
             if time.time() - validated_at < 7 * 86400:
                 return True
         return False
@@ -258,64 +252,57 @@ class MacCheckerV5:
 {C}╔══════════════════════════════════════════════════════════════╗
 ║{Y}          🔥 MAC CHECKER v5.3 — Smart Connect Edition  {C}      ║
 ║{G}          License Key + Permission Protected            {C}      ║
-║{W}          Authorized: {self.license.user_id or 'NONE':<35} {C}║
+║{W}          Device: {self.device_id:<42} {C}║
 ╚══════════════════════════════════════════════════════════════╝{N}
 """
         print(banner)
     
     # ─── License Setup ────────────────────────────────────
     async def setup_license(self):
-        """Handle license key entry and validation"""
+        """Handle license key entry and validation — Device Key ONLY"""
         self.print_banner()
         
-        # Check local cache first
         if self.license.check_local():
             print(f"{G}[✓] License verified locally.{N}")
-            print(f"{G}[✓] Welcome back, {self.license.user_id}!{N}")
+            print(f"{G}[✓] Device: {self.device_id[:12]}...{N}")
             return True
         
-        print(f"{Y}[🔐] LICENSE VERIFICATION REQUIRED{N}")
+        print(f"{Y}[🔐] DEVICE KEY REQUIRED{N}")
         print(f"{C}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{N}")
-        print(f"  This tool requires a valid license key.")
-        print(f"  Contact {B}@soulking4045{N} on Telegram to get access.")
+        print(f"  This tool requires a valid Device Key.")
+        print(f"  Contact {B}@soulking4045{N} on Telegram to get your key.")
+        print(f"  Your Device ID: {C}{self.device_id}{N}")
         print(f"{C}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{N}\n")
         
-        # Get Telegram ID
-        telegram_id = input(f"  {Y}Enter your Telegram ID/Username: {N}").strip()
-        if not telegram_id:
-            print(f"{R}[!] Telegram ID is required!{N}")
-            return False
-        
-        # Get license key
+        # Get Device Key ONLY
         license_key = ""
         attempts = 0
         max_attempts = 3
         
         while attempts < max_attempts:
-            license_key = input(f"  {Y}Enter License Key (MC5-XXXX-XXXX-XXXX): {N}").strip()
+            license_key = input(f"  {Y}Enter Device Key (MC5-XXXX-XXXX-XXXX): {N}").strip()
             if license_key:
                 break
             attempts += 1
-            print(f"{R}[!] License key cannot be empty ({max_attempts - attempts} attempts left){N}")
+            print(f"{R}[!] Key cannot be empty ({max_attempts - attempts} attempts left){N}")
         
         if not license_key:
-            print(f"{R}[!] No license key provided. Exiting.{N}")
+            print(f"{R}[!] No key provided. Exiting.{N}")
             return False
         
-        # Validate format
         if not re.match(r'^MC5-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$', license_key.upper()):
             print(f"{Y}[!] Invalid key format. Expected: MC5-XXXX-XXXX-XXXX{N}")
             print(f"{R}[!] Please check your key and try again.{N}")
             return False
         
-        print(f"\n{C}[*] Validating license...{N}")
+        print(f"\n{C}[*] Validating your key...{N}")
         
-        valid, message, data = await self.license.validate_key(license_key, telegram_id)
+        valid, message, data = await self.license.validate_key(license_key)
         
         if valid:
             print(f"\n{G}╔══════════════════════════════════════════════════════╗{N}")
-            print(f"{G}║  ✅ LICENSE VERIFIED SUCCESSFULLY!                  ║{N}")
-            print(f"{G}║  User: {telegram_id:<46} ║{N}")
+            print(f"{G}║  ✅ KEY VERIFIED SUCCESSFULLY!                      ║{N}")
+            print(f"{G}║  Device: {self.device_id:<45} ║{N}")
             if data:
                 remaining = data.get("remaining_days", "∞")
                 print(f"{G}║  Remaining: {remaining:<41} ║{N}")
@@ -323,12 +310,12 @@ class MacCheckerV5:
             return True
         else:
             print(f"\n{R}╔══════════════════════════════════════════════════════╗{N}")
-            print(f"{R}║  ❌ LICENSE VERIFICATION FAILED                     ║{N}")
+            print(f"{R}║  ❌ VERIFICATION FAILED                             ║{N}")
             print(f"{R}╚══════════════════════════════════════════════════════╝{N}")
             print(f"\n{R}{message}{N}\n")
             print(f"{Y}[💡] Tips:{N}")
             print(f"  1. Make sure you entered the correct key")
-            print(f"  2. Admin must grant you permission first")
+            print(f"  2. Admin must grant permission for your device")
             print(f"  3. Contact {B}@soulking4045{N} on Telegram for help")
             return False
     
@@ -348,82 +335,59 @@ class MacCheckerV5:
     def show_license_info(self):
         """Display license information"""
         print(f"\n{C}─── LICENSE INFORMATION ───{N}\n")
-        print(f"  {B}User:{N}         {self.license.user_id}")
         print(f"  {B}Device ID:{N}     {self.device_id}")
         print(f"  {B}Status:{N}       {G}✅ Active{N}" if self.license.is_licensed else f"  {B}Status:{N}       {R}❌ Inactive{N}")
         print(f"  {B}Key Server:{N}   {self.license.server_url or 'Not connected'}")
-        
         data = self.license.license_data or {}
         if data.get("remaining_days"):
             print(f"  {B}Expires:{N}      {data['remaining_days']} days")
-        print(f"  {C}Contact: @soulking4045 on Telegram{N}")
+        print(f"\n  {C}💡 Share your Device ID with @soulking4045 on Telegram{N}")
+        print(f"  {C}   to get a license key and permission.{N}")
         print()
         input(f"  {Y}Press Enter to continue...{N}")
     
-    # ─── Placeholder Functions (actual bypass logic) ──────
+    # ─── Placeholder Functions ──────
     async def option_adb_connect(self):
         print(f"\n{G}[*] ADB Connect — Coming soon with full implementation{N}")
-        print(f"{C}[*] This feature connects phone via ADB for network access{N}")
-    
     async def option_scan_and_save(self):
         print(f"\n{G}[*] Scan & Save — Coming soon with full implementation{N}")
-        print(f"{C}[*] Auto-scans network and saves shop profile{N}")
-    
     async def option_smart_connect(self):
         print(f"\n{G}[*] Smart Auto-Connect — Coming soon with full implementation{N}")
-        print(f"{C}[*] Loops all saved shops and auto-connects{N}")
-    
     async def option_guardian_mode(self):
         print(f"\n{G}[*] Guardian Mode — Coming soon with full implementation{N}")
-        print(f"{C}[*] Loads profile with auto-failover protection{N}")
-    
     async def option_tune_android(self):
         print(f"\n{G}[*] Android Tuning — Coming soon with full implementation{N}")
-    
     async def option_keep_wifi(self):
         print(f"\n{G}[*] Keep Wi-Fi Awake — Coming soon with full implementation{N}")
     
     # ─── Main Loop ────────────────────────────────────────
     async def run(self):
         """Main application loop"""
-        # License check FIRST
         if not await self.setup_license():
             print(f"\n{R}[!] License verification failed. Exiting.{N}")
             print(f"{Y}[💡] Contact @soulking4045 on Telegram to get access.{N}")
             return
-        
         self.running = True
-        
         while self.running:
             self.print_banner()
             self.show_menu()
-            
             try:
                 choice = input(f"  {Y}Select option [1-8]:{N} ").strip()
             except (EOFError, KeyboardInterrupt):
                 print(f"\n{Y}[!] Goodbye!{N}")
                 break
-            
-            if choice == "1":
-                await self.option_adb_connect()
-            elif choice == "2":
-                await self.option_scan_and_save()
-            elif choice == "3":
-                await self.option_smart_connect()
-            elif choice == "4":
-                await self.option_guardian_mode()
-            elif choice == "5":
-                await self.option_tune_android()
-            elif choice == "6":
-                await self.option_keep_wifi()
-            elif choice == "7":
-                self.show_license_info()
+            if choice == "1": await self.option_adb_connect()
+            elif choice == "2": await self.option_scan_and_save()
+            elif choice == "3": await self.option_smart_connect()
+            elif choice == "4": await self.option_guardian_mode()
+            elif choice == "5": await self.option_tune_android()
+            elif choice == "6": await self.option_keep_wifi()
+            elif choice == "7": self.show_license_info()
             elif choice == "8":
                 print(f"\n{Y}[!] Goodbye!{N}")
                 break
             else:
                 print(f"{R}[!] Invalid option!{N}")
-        
         self.running = False
 
 
@@ -434,7 +398,6 @@ class MacCheckerV5:
 async def main():
     """Main entry point"""
     app = MacCheckerV5()
-    
     try:
         await app.run()
     except KeyboardInterrupt:
@@ -445,11 +408,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    # Check Python version
     if sys.version_info < (3, 8):
         print(f"{R}[!] Python 3.8+ required! Current: {sys.version}{N}")
         sys.exit(1)
-    
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
