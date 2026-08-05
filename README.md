@@ -1,48 +1,29 @@
-# 🔥 MAC CHECKER v5.3 — Smart Connect Edition
+# MAC CHECKER v5.3 - Smart Connect Edition
+> Rich TUI | Session Pool | Guardian Engine | Smart Auto-Connect
+> NOW WITH LICENSE KEY + PERMISSION SYSTEM
 
-> **Rich TUI • Session Pool • Guardian Engine • Smart Auto-Connect**
+A powerful network bypass tool for Ruijie gateway networks.
 
-A powerful network bypass tool for Ruijie gateway networks with live Rich TUI dashboard,
-automated failover, keepalive, and zero-touch Smart Auto-Connect across multiple shops.
+## LICENSE KEY SYSTEM (NEW!)
+This tool requires a valid license key AND admin permission.
 
----
+### For Users:
+1. Contact @soulking4045 on Telegram
+2. Request access to MAC CHECKER v5
+3. Receive license key (format: MC5-XXXX-XXXX-XXXX)
+4. Enter key + Telegram ID when tool starts
 
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| **Smart Auto-Connect** | 🔐 One-click → loops ALL saved shops, auto-connects to first working MAC |
-| **Zero-Touch Scan & Save** | ⚡ Scan → bypass try → auto-save profile (no name prompt needed) |
-| **Guardian Engine** | 🛡️ Auto-failover, preemptive MAC switching, keepalive pings |
-| **Preemptive Switch** | ⚠️ Ping > 150ms → instant MAC switch before disconnect |
-| **Session Pool** | 🏊 Pre-warmed sessions for instant failover |
-| **Multi-Layer Ping** | ICMP + HTTP + TCP — detect real latency |
-| **Device Name Discovery** | 📡 9 methods (OUI, DHCP, mDNS, NetBIOS, ARP, dumpsys wifi…) |
-| **OUI Database** | 🗄️ 105+ entries (PS5, RPi4, Tuya, Samsung, Apple…) |
-| **Rich TUI Dashboard** | 📊 Live ping graph, MAC table, quality indicator 🟢🟡🟠🔴 |
-| **Termux-Optimized** | 📱 Auto-detects Android → reduced workers to avoid OOM |
-
----
-
-## 📦 Quick Install
-
-### Termux (Android)
+### For Admin:
 ```bash
-# 1. Clone
-git clone https://github.com/soulking4045-lgtm/mac-checker-v5.git
-cd mac-checker-v5
-
-# 2. Install
-bash install.sh
-
-# 3. Run
-python3 mac_checker_v5.py
-
-# 4. (Optional) Prevent phone sleep
-termux-wake-lock acquire
+python3 bot_key_server.py --port 8420   # Start key server
+python3 bot_key_server.py --generate-key  # Generate key
+python3 bot_key_server.py --add-user      # Grant permission
+python3 bot_key_server.py --list-users    # List users
+python3 bot_key_server.py --list-keys     # List keys
+python3 bot_key_server.py --remove-user   # Revoke access
 ```
 
-### Linux / PC
+## Quick Install
 ```bash
 git clone https://github.com/soulking4045-lgtm/mac-checker-v5.git
 cd mac-checker-v5
@@ -50,95 +31,42 @@ bash install.sh
 python3 mac_checker_v5.py
 ```
 
----
+## Menu
+1. ADB Connect
+2. Scan & Save (Zero-Touch)
+3. Smart Auto-Connect (All Shops)
+4. Load Profile & Guardian Mode
+5. Tune Android Stability
+6. Keep Wi-Fi Awake
+7. License Info
+8. Exit
 
-## 🎮 Menu
-
-```
-1. 📱 ADB Connect
-2. ⚡ Scan & Save (Zero-Touch)
-3. 🔐 Smart Auto-Connect (All Shops)    ← ⭐ NEW!
-4. 📂 Load Profile & Guardian Mode
-5. 🎛  Tune Android Stability
-6. ☕ Keep Wi-Fi Awake
-7. ❌ Exit
-```
-
----
-
-## 🚀 Workflow
-
-### First time at a shop:
-1. **Option 1** → connect phone ADB
-2. **Option 2** → scan network → auto-try bypass → auto-save profile
-3. Done! Profile saved as `shop_192_168_X_X.json`
-
-### Returning to ANY saved shop:
-1. **Option 3** → one click
-2. Tool loops ALL profiles → tries known-working MACs → connects instantly
-3. Guardian engine auto-manages connection!
-4. **Zero manual input required!** 🔥
-
----
-
-## 📊 TUI Dashboard
-
-```
-🛡️  MAC CHECKER v5.3 Smart Connect
-MAC: 96:1C:64:EE:FE:10  │  Uptime: 2h35m  │  ● 42ms  jitter: 2.1ms  🟡 Good
-
-📊 Ping Graph: █▄▃▂▄█▃▄▁▆█▄▃▂▄▆█▃▄▁█▅▃▂▄▆▃█▄▁▅█▃▂▄▅▆▃█▄▁▅
-
-📡 MAC Pool (48 devices)
-  ⭐ 96:1C:64:EE:FE:10  RPi4-Living    ● 42ms  0% loss  2.1ms jitter
-     AA:BB:CC:DD:EE:FF  Samsung-TV     ● 51ms  0% loss  3.2ms jitter
-     ...
-```
-
----
-
-## ⚙️ Config (Ruijie-Tuned)
-
-| Setting | Value |
-|--------|-------|
-| Preemptive switch threshold | 150ms |
-| Spike fails → switch | 2 spikes |
-| Failover trigger | 2 consecutive fails |
-| Recovery interval | 2.0s |
-| Cooldown (stable) | 0.3s (<30ms) / 0.5s (<50ms) |
-| Keepalive | TCP DNS every 20s |
-| Session reuse | 12× / 90s |
-
----
-
-## 🛠️ Requirements
-
+## Requirements
 - Python 3.8+
-- `aiohttp` (HTTP async)
-- `rich` (TUI)
-- ADB (Android Debug Bridge) + phone connected
+- aiohttp, rich
+- ADB + phone connected
+- Valid license key + admin permission
 
----
+## Key Server API
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| /validate | POST | Validate key + permission |
+| /activate | POST | Log device activation |
+| /heartbeat | POST | Server health check |
+| /ping | GET | Ping server |
+| /stats | GET | Server statistics |
 
-## 📝 Dependencies
+## File Structure
+- mac_checker_v5.py - Main tool with license validation
+- bot_key_server.py - License key management server
+- install.sh - One-click installer
+- requirements.txt - Python dependencies
 
-```
-aiohttp>=3.9.0
-rich>=13.0.0
-```
+## License
+MIT License
 
----
+## Disclaimer
+For educational purposes only. Use only on networks you own.
 
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE)
-
----
-
-## ⚠️ Disclaimer
-
-This tool is for **educational purposes only**. Use only on networks you own or have permission to test. The author is not responsible for any misuse.
-
----
-
-**Made with ❤️ in Myanmar 🇲🇲**
+Contact: @soulking4045 on Telegram
+Made with heart in Myanmar

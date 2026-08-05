@@ -1,1 +1,3 @@
-aiohttp>=3.9.0
+# Replit specific requirements for MAC CHECKER v5.3
+aiohttp
+rich
