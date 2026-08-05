@@ -1,0 +1,5 @@
+# MAC Checker v5.3 — Python dependencies
+# Install: pip install -r requirements.txt
+
+aiohttp>=3.9.0
+rich>=13.0.0
