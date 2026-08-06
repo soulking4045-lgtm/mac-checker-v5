@@ -8,7 +8,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 # ─── Config ───────────────────────────────────────────
 CONFIG_DIR = os.path.expanduser("~/.mac_checker_v5")
 DB_PATH = os.path.join(CONFIG_DIR, "keys.db")
-BOT_TOKEN = os.environ.get("MC5_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+BOT_TOKEN = os.environ.get("MC5_BOT_TOKEN", "8933721915:AAFQ79GCSOMse5oy-ZznzofTbqjrUzPGvzw")
 ADMIN_IDS = [int(x) for x in os.environ.get("MC5_ADMIN_IDS", "").split(",") if x.strip()]
 
 # If no admin IDs set in env, allow anyone (or set specific IDs)
